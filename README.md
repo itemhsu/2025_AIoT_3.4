@@ -216,6 +216,11 @@ python export_onnx.py   --weights yolo11n.pt   --imgsz 640   --output yolo11n.on
 - INT8 / Mixed precision
 - 記憶體佈局最佳化
 - 可直接由 esp-dl 載入
+<img width="578" height="245" alt="image" src="https://github.com/user-attachments/assets/d370879b-1aba-4efc-98ff-30f1e5107625" />
+
+<img width="585" height="196" alt="image" src="https://github.com/user-attachments/assets/b9b0d098-723c-4a9a-b2de-8efa2694426a" />
+
+<img width="455" height="194" alt="image" src="https://github.com/user-attachments/assets/f9c1cada-39e8-4b53-a99f-b1b6cee7e661" />
 
 ---
 
