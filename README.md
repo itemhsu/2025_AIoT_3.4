@@ -89,6 +89,89 @@ MCU Runtime
     - 影像中位數比例為 640 x 480
 <img width="756" height="175" alt="image" src="https://github.com/user-attachments/assets/b8e5bb36-4d32-4b4d-8816-03e0f2fa2516" />
 
+- 要實作 COCO 偵測功能的 UI 觸發，必須完成以下四個確定步驟：
+  - 1. 修改模式定義 (./main/ui/ui_extra.h)
+  - 在現有的枚舉中新增 AI_DETECT_COCO。根據原始碼，PEDESTRIAN 為 0，FACE 為 1。
+```C
+typedef enum {
+    AI_DETECT_PEDESTRIAN = 0, // Pedestrian detection
+    AI_DETECT_FACE,           // Face detection
+    AI_DETECT_COCO,           // 確定新增：COCO 物件偵測 (數值為 2)
+    AI_DETECT_MODE_MAX        // Maximum number of modes
+} ai_detect_mode_t;
+```
+- 2. 更新 AI 處理邏輯 (./main/app/AI/app_ai_detect.cpp)
+  - 您必須在後端的任務與影格處理函式中加入 COCO 的路徑。
+  - 修改偵測任務：在 camera_dectect_task 函式中加入 COCO 偵測呼叫
+```C
+if (ui_extra_get_ai_detect_mode() == AI_DETECT_PEDESTRIAN) {
+    detect_results = app_pedestrian_detect((uint16_t *)p->buffer, DETECT_WIDTH, DETECT_HEIGHT);
+} else if (ui_extra_get_ai_detect_mode() == AI_DETECT_FACE) {
+    detect_results = app_humanface_detect((uint16_t *)p->buffer, DETECT_WIDTH, DETECT_HEIGHT);
+} else if (ui_extra_get_ai_detect_mode() == AI_DETECT_COCO) {
+    // 呼叫來源中定義的 COCO 偵測函式
+    detect_results = app_coco_detect((uint16_t *)p->buffer, DETECT_WIDTH, DETECT_HEIGHT);
+}
+```
+
+- 修改影格處理：在 app_ai_detection_process_frame 中串聯繪圖邏輯
+```C
+if(ai_detect_mode == AI_DETECT_FACE) {
+    ret = app_humanface_ai_detect((uint16_t*)current_ai_buffer, (uint16_t*)detect_buf, width, height);
+} else if(ai_detect_mode == AI_DETECT_PEDESTRIAN) {
+    ret = app_pedestrian_ai_detect((uint16_t*)current_ai_buffer, (uint16_t*)detect_buf, width, height);
+} else if(ai_detect_mode == AI_DETECT_COCO) {
+    // 呼叫來源中已實作的繪製函式，它會處理 YOLO 框與文字標籤
+    ret = app_coco_od_detect((uint16_t*)detect_buf, width, height); 
+}
+```
+- 3. 更新 UI 標籤顯示 (./main/ui/ui_extra.c)
+  - 修改 ui_extra_update_ai_detect_mode_label 函式，讓 UI 能顯示「Mode: COCO」
+```C
+static void ui_extra_update_ai_detect_mode_label(void) {
+    if (ai_mode_label == NULL) return;
+
+    if (current_ai_detect_mode == AI_DETECT_PEDESTRIAN) {
+        lv_label_set_text(ai_mode_label, "Mode: Pedestrian");
+    } else if (current_ai_detect_mode == AI_DETECT_FACE) {
+        lv_label_set_text(ai_mode_label, "Mode: Face");
+    } else if (current_ai_detect_mode == AI_DETECT_COCO) {
+        lv_label_set_text(ai_mode_label, "Mode: COCO"); // 新增顯示文字
+    }
+}
+```
+- 4. 實作 UI 按鈕切換邏輯 (./main/ui/ui_extra.c)
+  - 目前的 UI 透過上下按鈕來切換模式。您需要修改 ui_extra_btn_up 與 ui_extra_btn_down 的 switch-case 邏輯，使其支援三個模式的循環切換
+  - 向下按鈕 (Next Mode)：
+```C
+case UI_PAGE_AI_DETECT:
+    if (current_ai_detect_mode == AI_DETECT_PEDESTRIAN) {
+        ui_extra_change_ai_detect_mode(AI_DETECT_FACE);
+    } else if (current_ai_detect_mode == AI_DETECT_FACE) {
+        ui_extra_change_ai_detect_mode(AI_DETECT_COCO); // 切換至 COCO
+    } else {
+        ui_extra_change_ai_detect_mode(AI_DETECT_PEDESTRIAN); // 循環回第一個
+    }
+    break;
+```
+- 向上按鈕 (Prev Mode)：
+```C
+case UI_PAGE_AI_DETECT:
+    if (current_ai_detect_mode == AI_DETECT_PEDESTRIAN) {
+        ui_extra_change_ai_detect_mode(AI_DETECT_COCO); // 回到最後一個 (COCO)
+    } else if (current_ai_detect_mode == AI_DETECT_COCO) {
+        ui_extra_change_ai_detect_mode(AI_DETECT_FACE);
+    } else {
+        ui_extra_change_ai_detect_mode(AI_DETECT_PEDESTRIAN);
+    }
+    break;
+```
+
+#### 實作關鍵
+- 現成功能：您的專案已經在 app_ai_detect.cpp 中初始化了 coco_od_detect 指標，並實作了完整的繪圖邏輯 app_coco_od_detect，因此只需完成上述的 UI 與邏輯串聯即可運作。
+- 確定性：根據 ui_extra.h 的結構，AI_DETECT_COCO 的數值確定應為 2。
+- UI 互動：使用者只要進入「AI DETECT」頁面，按下實體按鈕或點擊對應的 UI 元件，就能看到模式標籤切換至 COCO，並啟動 80 類物件的偵測
+
 
 
 ### 4.1 模組位置與檔案
