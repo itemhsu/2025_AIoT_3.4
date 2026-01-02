@@ -199,6 +199,65 @@ void app_main(void)
     esp_restart();
 }
 ```
+利用COM3連接clude <inttypes.h>
+#include "sdkconfig.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "esp_chip_info.h"
+#include "esp_flash.h"
+#include "esp_system.h"
+
+void app_main(void)
+{
+    printf("Hello world!\n");
+
+    /* Print chip information */
+    esp_chip_info_t chip_info;
+    uint32_t flash_size;
+    esp_chip_info(&chip_info);
+    printf("This is %s chip with %d CPU core(s), %s%s%s%s, ",
+           CONFIG_IDF_TARGET,
+           chip_info.cores,
+           (chip_info.features & CHIP_FEATURE_WIFI_BGN) ? "WiFi/" : "",
+           (chip_info.features & CHIP_FEATURE_BT) ? "BT" : "",
+           (chip_info.features & CHIP_FEATURE_BLE) ? "BLE" : "",
+           (chip_info.features & CHIP_FEATURE_IEEE802154) ? ", 802.15.4 (Zigbee/Thread)" : "");
+
+    unsigned major_rev = chip_info.revision / 100;
+    unsigned minor_rev = chip_info.revision % 100;
+    printf("silicon revision v%d.%d, ", major_rev, minor_rev);
+    if(esp_flash_get_size(NULL, &flash_size) != ESP_OK) {
+        printf("Get flash size failed");
+        return;
+    }
+
+    printf("%" PRIu32 "MB %s flash\n", flash_size / (uint32_t)(1024 * 1024),
+           (chip_info.features & CHIP_FEATURE_EMB_FLASH) ? "embedded" : "external");
+
+    printf("Minimum free heap size: %" PRIu32 " bytes\n", esp_get_minimum_free_heap_size());
+
+    for (int i = 10; i >= 0; i--) {
+        printf("Restarting in %d seconds...\n", i);
+        vTaskDelay(1000 / portTICK_PERIOD_MS);
+    }
+    printf("Restarting now.\n");
+    fflush(stdout);
+    esp_restart();
+}
+
+
+利用COM3連接埠連接PUTTY並使用以下指令連接:
+```
+esptool -p COM3 --chip esp32p4 -b 115200 --no-stub --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 2MB --flash_freq 80m 0x2000 ./bootloader.bin 0x8000 ./partition-table.bin 0x10000 ./hello_world.bin"-->燒入的command
+```
+
+![messageImage_1767235739080_0](https://github.com/user-attachments/assets/ca71b2c2-787b-4e2d-b586-34da33ac5c6e)
+
+
+PUTTY軟體成功跑出 Hello world
+![messageImage_1767235702998_0](https://github.com/user-attachments/assets/7b53391d-06d2-4956-b215-d1c7ffd186bb)
+
+------------------------------------------------------------------
 <img width="1203" height="278" alt="image" src="https://github.com/user-attachments/assets/8d437fad-2d98-46e9-a98f-b6fda65e63f8" />
 # ESP32-P4-EYE 迷你智慧相機應用示例說明
 
@@ -326,4 +385,9 @@ https://dl.espressif.com/AE/esp-dev-kits/p4_eye_factory_demo_100.bin
 ```
 python3 -m esptool -p /dev/cu.usbmodem1101   --chip esp32p4   -b 115200 --no-stub  write_flash   0x0 p4_eye_factory_demo_100.bin
 ```
+### 完成程式燒入
+![S__74481822](https://github.com/user-attachments/assets/76013c8e-90cc-4850-8302-0e58ac900ed9)
+可以判斷物體是否為行人 
+
+
 
