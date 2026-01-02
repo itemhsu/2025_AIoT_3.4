@@ -386,8 +386,9 @@ https://dl.espressif.com/AE/esp-dev-kits/p4_eye_factory_demo_100.bin
 python3 -m esptool -p /dev/cu.usbmodem1101   --chip esp32p4   -b 115200 --no-stub  write_flash   0x0 p4_eye_factory_demo_100.bin
 ```
 ### 完成程式燒入
-![S__74481822](https://github.com/user-attachments/assets/76013c8e-90cc-4850-8302-0e58ac900ed9)
 可以判斷物體是否為行人 
+![S__74481822](https://github.com/user-attachments/assets/76013c8e-90cc-4850-8302-0e58ac900ed9)
+
 
 
 
