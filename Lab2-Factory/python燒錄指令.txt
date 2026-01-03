@@ -1,0 +1,8 @@
+# 自行於SageMaker Build出來的範例
+python -m esptool -p COM3 --chip esp32p4 -b 115200 --no-stub --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 40m 0x2000 ./bootloader.bin 0x8000 ./partition-table.bin 0x10000 ./factory_demo.bin
+
+
+
+# 原廠還原用的範例
+# 下載網址 https://dl.espressif.com/AE/esp-dev-kits/p4_eye_factory_demo_100.bin
+python -m esptool -p COM3 --chip esp32p4   -b 115200 --no-stub  write_flash   0x0 p4_eye_factory_demo_100.bin
